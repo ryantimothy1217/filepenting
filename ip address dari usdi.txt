@@ -1,0 +1,4 @@
+ip server public usdi : 103.69.197.20
+ip yang didapat virtualbox : 172.16.211.6 dan 172.16.211.10
+ip yang didapat windows : 172.16.211.23
+ip router switch : 172.16.240.20

@@ -1,0 +1,124 @@
+1. Cari tau interface dan ip address yang dipakai.
+
+2. Install Git
+
+3. Rangkaian Install Snort :
+a.) update sistem : sudo apt update
+b.) install librari yang dibutuhkan : sudo apt-get install build-essential libpcap-dev libpcre3-dev libnet1-dev zlib1g-dev luajit hwloc libdnet-dev libdumbnet-dev bison flex liblzma-dev openssl libssl-dev pkg-config libhwloc-dev cmake cpputest libsqlite3-dev uuid-dev libcmocka-dev libnetfilter-queue-dev libmnl-dev autotools-dev libluajit-5.1-dev libunwind-dev
+c.) buat direktori yang akan diisi file snort : mkdir snort-source-files kemudian masuk ke dalam direktori : cd snort-source-files
+d.) lalu install LibDAQ dan jalankan perintah selanjutnya : 
+	-) git clone https://github.com/snort3/libdaq.git
+	-) cd libdaq
+	-) ./bootstrap
+	-) ./configure
+	-) make
+	-) sudo make install
+e.) lalu install Tcmalloc dan jalankan perintah selanjutnya :
+	-) cd ../
+	-) wget https://github.com/gperftools/gperftools/releases/download/gperftools-2.9.1/gperftools-2.9.1.tar.gz
+	-) tar xzf gperftools-2.9.1.tar.gz
+	-) cd gperftools-2.9.1/
+	-) ./configure
+	-) make
+	-) sudo make install
+f.) lalu install Snort dan jalankan perintah selanjutnya :
+	-) cd ../
+	-) git clone https://github.com/snortadmin/snort3.git
+	-) cd snort3/ (masuk ke direktori snort)
+	-) ./configure_cmake.sh --prefix=/usr/local --enable-tcmalloc (konfigurasi dan aktifkan tcmalloc)
+	-) cd build (mengarahkan ke direktori build untuk melakukan compile dan instalasi snort3)
+	-) make
+	-) sudo make install
+	-) sudo ldconfig (update shared libraries)
+	-) sudo ln -s /usr/local/bin/snort /usr/sbin/snort (Create a symlink for /usr/sbin/snort)
+	-) snort -V (cek apakah snort sudah terinstal dengan versi yang diinginkan)
+
+4.) Konfigurasi Snort :
+a.) buka file snort.lua :
+	-) cd /usr/local/etc/snort
+	-) sudo nano snort.lua
+	-) masukkan ip dari server kedalam baris yang terdapat HOME_NET
+	-) misal : HOME_NET = '192.168.1.1'
+	-) konfigurasi pada bagian output dengan mengaktifkan output alert_json
+	-) file = true,
+	   limit = 0,
+	   fields = 'seconds action class b64_data dir dst_addr dst_ap dst_port eth_dst eth_len eth_src eth_type gid icmp_code icmp_id icmp_seq icmp_type iface ip_id ip_len msg mpls pkt_gen pkt_len pkt_num priority proto rev rule service sid src_addr src_ap src_port target tcp_ack tcp_flags tcp_len tcp_seq tcp_win tos ttl udp_len vlan timestamp',
+b.) melakukan validasi terhadap snort.lua :
+	-) sudo snort -c /usr/local/etc/snort/snort.lua
+c.) melakukan konfigurasi pada file rules snort :
+	-) cd /etc/snort/rules
+	-) sudo nano local.rules
+	-) masukkan rules-rules yang dibutuhkan
+	-) #icmp rules
+	   alert icmp any any -> HOME_NET any ( msg:"ICMP TEST"; sid:1000001;)
+	   alert icmp any any -> HOME_NET any ( msg:"ICMP Ping of Death"; itype:8; dsize:>1000; sid:1000002;)
+	   #diatas itu ping of death
+	   alert icmp any any -> HOME_NET any ( msg:"Smurf Attack"; itype:8; sid:1000003;)
+	   #tcp rules
+	   alert tcp any any -> HOME_NET any ( msg:"TCP Flood Attack"; detection_filter:track by_dst, count 1000, seconds 1; sid:1000004;)
+	   #diatas itu tcp flood
+	   alert tcp any any -> HOME_NET 80 ( msg:"Percobaan akses Web Server"; sid:1000005;)
+	   alert tcp any any -> HOME_NET 22 ( msg:"Nmap Portscan"; sid:1000006;)
+	   alert tcp any any -> HOME_NET 23 ( msg:"Ada Percobaan Akses Telnet"; sid:1000007;)
+	   alert tcp any any -> HOME_NET any ( msg:"Fin Scan"; flags: F; sid:1000008;)
+	   alert tcp any any -> HOME_NET any ( msg:"Null Scan"; flags: 0; sid:1000009;)
+	   alert tcp any any -> HOME_NET any ( msg:"Syn Attack"; flags: S,12; sid:1000010;)
+	   #udp rules
+	   alert udp any any -> HOME_NET any ( msg:"Ada Percobaan Akses UDP"; sid:1000011;)
+	   alert udp any any -> HOME_NET any ( msg:"UDP Flood Attack"; detection_filter: track by_dst, count 1000, seconds 1; sid:1000012;)
+	   #diatas itu udp flood
+d.) melakukan validasi terhadap rules snort :
+	-) sudo snort -R /etc/snort/rules/local.rules
+e.) direktori dari penyimpanan file json :
+	-) cd /usr/local/etc/snort atau cd etc/snort/rules
+	-) sudo chmod 777 alert_json.txt
+
+5.) Install dan Konfigurasi Telegram :
+a.) Membuat Bot Di BotFather untuk mendapatkan API
+	-) search botfather di telegram
+	-) /start kemudian /newbot
+	-) lalu masukan nama untuk bot
+	-) lalu masukan username untuk bot
+	-) mendapatkan API
+
+6.) Install dan Konfigurasi Python :
+a.) update sistem : sudo apt update
+b.) install prasyarat : sudo apt install software-properties-common
+c.) Tambahkan PPA deadsnakes ke sources list : sudo add-apt-repository ppa:deadsnakes/ppa (Tekan Enter untuk melanjutkan)
+d.) Install Python 3.8 : sudo apt install python3.8
+e.) melihat versi python : python3.8 --version
+f.) install PIP :
+	-) sudo apt install python3-pip
+g.) install pyTelegramBotAPI :
+	-) pip install pyTelegramBotAPI
+h.) install psycopg2 :
+	-) pip install psycopg2
+
+7. Install dan Konfigurasi PostgreSQL :
+a.) sudo apt update atau sudo apt-get update
+b.) sudo apt install postgresql postgresql-contrib
+c.) sudo systemctl start postgresql (menjalankan postgresql)
+d.) sudo systemctl enable postgresql (mengaktifkan postgresql)
+e.) psql --version (cek versi postgresql)
+d.) service postgresql status (cek status postgresql)
+f.) sudo su postgres atau sudo -i -u postgres
+g.) psql (untuk menjalankan postgresql shell)
+h.) \l (untuk melihat list database)
+i.) \du (untuk melihat user yang tersedia pada postgresql)
+j.) \q (untuk keluar dari postgresql shell)
+k.) exit (untuk keluar ke sistem reguler)
+l.) masuk sebagai akun postgres kemudian ketik perintah createuser --interactive (untuk membuat user baru)
+m.) membuat database :
+	-) masuk ke akun user atau akun postgres (username postgres dengan password 123456 dengan hostname localhost dengan port_id 5432)
+	-) createdb cobaskripsi atau bisa dengan sudo -u postgres createdb cobaskripsi
+n.) membuat table :
+	-) CREATE TABLE table_name (
+    column_name1 col_type (field_length) column_constraints,
+    column_name2 col_type (field_length),
+    column_name3 col_type (field_length)
+);
+
+8. Clone File dari Github Lalu Masukkan ke .bashrc dipaling bawah :
+	-) masuk ke direktori manapun
+	-) git clone https://github.com/ryantimothy1217/filepython.git
+sudo snort -T -c /usr/local/etc/snort/snort.lua -R /etc/snort/rules/local.rules -l /var/log/snort -i ens4 -A alert_json -s 65535 -k none
